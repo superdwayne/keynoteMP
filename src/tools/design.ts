@@ -18,24 +18,25 @@ import {
 import type { SlideComposerInput } from "../design/composer.js";
 import type { BrandConfig } from "../design/brand.js";
 import { resolveBrand, brandToTokens, extractThemeColors } from "../design/brand.js";
+import {
+  getCurrentBrand,
+  setCurrentBrand,
+  resolveCurrentBrand,
+} from "../design/brand-state.js";
 import { layoutLibrary } from "../design/layout-library.js";
+import { templateLibrary } from "../design/templates.js";
 import type { SlideContent } from "../design/variations.js";
-
-// ---------------------------------------------------------------------------
-// Module-level state for set_brand
-// ---------------------------------------------------------------------------
-
-let currentBrand: Partial<BrandConfig> = {};
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Merge the module-level currentBrand with per-call brand overrides.
+ * Merge the stored brand with per-call brand overrides.
  * Per-call settings take priority over the stored brand.
  */
 function mergeBrand(perCall?: Partial<BrandConfig>): Partial<BrandConfig> | undefined {
+  const currentBrand = getCurrentBrand();
   const hasStored = Object.keys(currentBrand).length > 0;
   const hasPerCall = perCall !== undefined && Object.keys(perCall).length > 0;
 
@@ -74,6 +75,40 @@ export function registerDesignTools(server: McpServer): void {
     },
     async (params) => {
       try {
+        // Validate at least one content field is provided
+        const hasContent = params.title || params.subtitle || params.body ||
+          (params.bodyItems && params.bodyItems.length > 0) || params.quote ||
+          (params.imagePaths && params.imagePaths.length > 0) ||
+          (params.stats && params.stats.length > 0);
+
+        if (!hasContent) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({
+                success: false,
+                error: "No content provided. Specify at least one of: title, subtitle, body, bodyItems, quote, imagePaths, stats.",
+              }),
+            }],
+            isError: true,
+          };
+        }
+
+        // Validate layoutName exists if provided
+        if (params.layoutName && !layoutLibrary[params.layoutName]) {
+          const available = Object.keys(layoutLibrary).join(", ");
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({
+                success: false,
+                error: `Unknown layout "${params.layoutName}". Available layouts: ${available}`,
+              }),
+            }],
+            isError: true,
+          };
+        }
+
         // Build SlideContent from params
         const content: SlideContent = {};
         if (params.title) content.title = params.title;
@@ -141,6 +176,20 @@ export function registerDesignTools(server: McpServer): void {
     },
     async (params) => {
       try {
+        // Validate slides array is non-empty
+        if (!params.slides || params.slides.length === 0) {
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({
+                success: false,
+                error: "No slides provided. The slides array must contain at least one slide.",
+              }),
+            }],
+            isError: true,
+          };
+        }
+
         // Build per-call brand config
         const perCallBrand: Partial<BrandConfig> = {};
         if (params.primaryColor) perCallBrand.primaryColor = params.primaryColor;
@@ -208,15 +257,18 @@ export function registerDesignTools(server: McpServer): void {
     async (params) => {
       try {
         // Update stored brand config, merging with existing values
-        if (params.primaryColor !== undefined) currentBrand.primaryColor = params.primaryColor;
-        if (params.secondaryColor !== undefined) currentBrand.secondaryColor = params.secondaryColor;
-        if (params.accentColor !== undefined) currentBrand.accentColor = params.accentColor;
-        if (params.backgroundColor !== undefined) currentBrand.backgroundColor = params.backgroundColor;
-        if (params.fontPrimary !== undefined) currentBrand.fontPrimary = params.fontPrimary;
-        if (params.fontSecondary !== undefined) currentBrand.fontSecondary = params.fontSecondary;
-        if (params.style !== undefined) currentBrand.style = params.style;
+        const updates: Partial<BrandConfig> = {};
+        if (params.primaryColor !== undefined) updates.primaryColor = params.primaryColor;
+        if (params.secondaryColor !== undefined) updates.secondaryColor = params.secondaryColor;
+        if (params.accentColor !== undefined) updates.accentColor = params.accentColor;
+        if (params.backgroundColor !== undefined) updates.backgroundColor = params.backgroundColor;
+        if (params.fontPrimary !== undefined) updates.fontPrimary = params.fontPrimary;
+        if (params.fontSecondary !== undefined) updates.fontSecondary = params.fontSecondary;
+        if (params.style !== undefined) updates.style = params.style;
+        setCurrentBrand(updates);
 
         // Resolve the full brand to show what will be used
+        const currentBrand = getCurrentBrand();
         const resolved = await resolveBrand(currentBrand);
         const { palette, typography } = brandToTokens(resolved);
 
@@ -265,6 +317,7 @@ export function registerDesignTools(server: McpServer): void {
     async () => {
       try {
         const themeBrand = await extractThemeColors();
+        const currentBrand = getCurrentBrand();
         const resolved = await resolveBrand(currentBrand);
         const { palette, typography } = brandToTokens(resolved);
 
@@ -364,6 +417,179 @@ export function registerDesignTools(server: McpServer): void {
               text: JSON.stringify({ success: false, error: String(error) }),
             },
           ],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // ---------- list_templates ----------
+  server.tool(
+    "list_templates",
+    "Lists all available presentation templates with slide counts and descriptions",
+    {},
+    async () => {
+      try {
+        const templates = Object.entries(templateLibrary).map(([name, template]) => ({
+          name,
+          description: template.description,
+          slideCount: template.slides.length,
+          slides: template.slides.map((s) => ({
+            layout: s.layoutName,
+            purpose: s.purpose,
+          })),
+        }));
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ success: true, count: templates.length, templates }),
+          }],
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ success: false, error: String(error) }),
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // ---------- get_template ----------
+  server.tool(
+    "get_template",
+    "Gets the full structure of a specific presentation template with slide-by-slide layout and content hints",
+    {
+      templateName: z.string().describe("Template name (e.g. 'pitch-deck', 'status-update', 'workshop', 'product-launch')"),
+    },
+    async ({ templateName }) => {
+      try {
+        const template = templateLibrary[templateName];
+        if (!template) {
+          const available = Object.keys(templateLibrary).join(", ");
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({
+                success: false,
+                error: `Unknown template "${templateName}". Available: ${available}`,
+              }),
+            }],
+            isError: true,
+          };
+        }
+
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ success: true, template }),
+          }],
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ success: false, error: String(error) }),
+          }],
+          isError: true,
+        };
+      }
+    }
+  );
+
+  // ---------- design_from_template ----------
+  server.tool(
+    "design_from_template",
+    "Creates a full presentation from a template, using the template's layout sequence with provided content",
+    {
+      templateName: z.string().describe("Template name (e.g. 'pitch-deck')"),
+      slides: z.array(z.object({
+        title: z.string().optional(),
+        subtitle: z.string().optional(),
+        body: z.string().optional(),
+        bodyItems: z.array(z.string()).optional(),
+        quote: z.string().optional(),
+        attribution: z.string().optional(),
+        imagePaths: z.array(z.string()).optional(),
+        stats: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
+      })).optional().describe("Content for each slide (matched by position to template slides). Omit to use suggested content."),
+      primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().describe("Brand primary color"),
+      style: z.enum(["minimal", "bold", "elegant", "playful", "corporate"]).optional().describe("Visual style"),
+      startSlideIndex: z.number().int().min(1).optional().default(1).describe("1-based starting slide index"),
+    },
+    async (params) => {
+      try {
+        const template = templateLibrary[params.templateName];
+        if (!template) {
+          const available = Object.keys(templateLibrary).join(", ");
+          return {
+            content: [{
+              type: "text" as const,
+              text: JSON.stringify({
+                success: false,
+                error: `Unknown template "${params.templateName}". Available: ${available}`,
+              }),
+            }],
+            isError: true,
+          };
+        }
+
+        const perCallBrand: Partial<BrandConfig> = {};
+        if (params.primaryColor) perCallBrand.primaryColor = params.primaryColor;
+        if (params.style) perCallBrand.style = params.style;
+        const mergedBrand = mergeBrand(perCallBrand);
+
+        const inputs: SlideComposerInput[] = template.slides.map((slideTemplate, i) => {
+          const userContent = params.slides?.[i];
+          const content: SlideContent = {};
+
+          if (userContent) {
+            if (userContent.title) content.title = userContent.title;
+            if (userContent.subtitle) content.subtitle = userContent.subtitle;
+            if (userContent.body) content.body = userContent.body;
+            if (userContent.bodyItems) content.bodyItems = userContent.bodyItems;
+            if (userContent.quote) content.quote = userContent.quote;
+            if (userContent.attribution) content.attribution = userContent.attribution;
+            if (userContent.imagePaths) content.imagePaths = userContent.imagePaths;
+            if (userContent.stats) content.stats = userContent.stats;
+          } else {
+            // Use suggested content from the template
+            const sc = slideTemplate.suggestedContent;
+            if (sc.title) content.title = sc.title;
+            if (sc.subtitle) content.subtitle = sc.subtitle;
+            if (sc.body) content.body = sc.body;
+            if (sc.bodyItems) content.bodyItems = sc.bodyItems;
+          }
+
+          return {
+            slideIndex: params.startSlideIndex + i,
+            content,
+            layoutName: slideTemplate.layoutName,
+            brand: mergedBrand,
+          };
+        });
+
+        const results = await composeDeck(inputs);
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({
+              success: true,
+              templateUsed: params.templateName,
+              slidesComposed: results.length,
+              slides: results,
+            }),
+          }],
+        };
+      } catch (error) {
+        return {
+          content: [{
+            type: "text" as const,
+            text: JSON.stringify({ success: false, error: String(error) }),
+          }],
           isError: true,
         };
       }

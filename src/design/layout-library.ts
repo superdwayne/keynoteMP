@@ -701,6 +701,443 @@ const blankCanvas: LayoutDefinition = {
 };
 
 // ============================================================================
+// Business Layouts (timeline, before-after, team-grid, pricing-table, roadmap)
+// ============================================================================
+
+/**
+ * Horizontal timeline with 3 milestone nodes.
+ * Timeline bar across the middle, dates above, descriptions below.
+ */
+const timeline: LayoutDefinition = {
+  name: "timeline",
+  description: "Horizontal timeline with 3 milestones, dates, and descriptions",
+  category: "data",
+  elements: [
+    {
+      id: "heading",
+      type: "text",
+      role: "heading",
+      gridArea: { colStart: 1, colSpan: 10, rowStart: 0, rowSpan: 1 },
+      alignment: "left",
+    },
+    {
+      id: "timeline-bar",
+      type: "shape",
+      role: "divider",
+      gridArea: { colStart: 1, colSpan: 10, rowStart: 3, rowSpan: 1 },
+    },
+    {
+      id: "node-1",
+      type: "shape",
+      role: "accent-shape",
+      gridArea: { colStart: 2, colSpan: 1, rowStart: 3, rowSpan: 1 },
+    },
+    {
+      id: "date-1",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "desc-1",
+      type: "text",
+      role: "body",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "node-2",
+      type: "shape",
+      role: "accent-shape",
+      gridArea: { colStart: 6, colSpan: 1, rowStart: 3, rowSpan: 1 },
+    },
+    {
+      id: "date-2",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "desc-2",
+      type: "text",
+      role: "body",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "node-3",
+      type: "shape",
+      role: "accent-shape",
+      gridArea: { colStart: 10, colSpan: 1, rowStart: 3, rowSpan: 1 },
+    },
+    {
+      id: "date-3",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "desc-3",
+      type: "text",
+      role: "body",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+  ],
+};
+
+/**
+ * Before/After comparison with two image zones and labels.
+ * Two equal halves separated by a central divider.
+ */
+const beforeAfter: LayoutDefinition = {
+  name: "before-after",
+  description: "Side-by-side before/after comparison with images and labels",
+  category: "comparison",
+  elements: [
+    {
+      id: "heading",
+      type: "text",
+      role: "heading",
+      gridArea: { colStart: 1, colSpan: 10, rowStart: 0, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "label-before",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 1, colSpan: 5, rowStart: 1, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "image-before",
+      type: "image",
+      role: "hero-image",
+      gridArea: { colStart: 1, colSpan: 5, rowStart: 2, rowSpan: 4 },
+      padding: 8,
+    },
+    {
+      id: "caption-before",
+      type: "text",
+      role: "caption",
+      gridArea: { colStart: 1, colSpan: 5, rowStart: 6, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "divider",
+      type: "shape",
+      role: "divider",
+      gridArea: { colStart: 6, colSpan: 1, rowStart: 1, rowSpan: 6 },
+    },
+    {
+      id: "label-after",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 7, colSpan: 5, rowStart: 1, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "image-after",
+      type: "image",
+      role: "hero-image",
+      gridArea: { colStart: 7, colSpan: 5, rowStart: 2, rowSpan: 4 },
+      padding: 8,
+    },
+    {
+      id: "caption-after",
+      type: "text",
+      role: "caption",
+      gridArea: { colStart: 7, colSpan: 5, rowStart: 6, rowSpan: 1 },
+      alignment: "center",
+    },
+  ],
+};
+
+/**
+ * Team grid with 3 member columns: avatar, name, and title.
+ */
+const teamGrid: LayoutDefinition = {
+  name: "team-grid",
+  description: "3-person team grid with avatars, names, and titles",
+  category: "media",
+  elements: [
+    {
+      id: "heading",
+      type: "text",
+      role: "heading",
+      gridArea: { colStart: 1, colSpan: 10, rowStart: 0, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "avatar-1",
+      type: "image",
+      role: "hero-image",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 2, rowSpan: 3 },
+      padding: 8,
+    },
+    {
+      id: "name-1",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 5, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "title-1",
+      type: "text",
+      role: "caption",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 6, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "avatar-2",
+      type: "image",
+      role: "hero-image",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 2, rowSpan: 3 },
+      padding: 8,
+    },
+    {
+      id: "name-2",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 5, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "title-2",
+      type: "text",
+      role: "caption",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 6, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "avatar-3",
+      type: "image",
+      role: "hero-image",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 2, rowSpan: 3 },
+      padding: 8,
+    },
+    {
+      id: "name-3",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 5, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "title-3",
+      type: "text",
+      role: "caption",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 6, rowSpan: 1 },
+      alignment: "center",
+    },
+  ],
+};
+
+/**
+ * 3-column pricing table with plan names, prices, and feature lists.
+ */
+const pricingTable: LayoutDefinition = {
+  name: "pricing-table",
+  description: "3-tier pricing table with plan names, prices, and features",
+  category: "data",
+  elements: [
+    {
+      id: "heading",
+      type: "text",
+      role: "heading",
+      gridArea: { colStart: 1, colSpan: 10, rowStart: 0, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-1-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 1, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-1-price",
+      type: "text",
+      role: "display",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-1-features",
+      type: "text",
+      role: "body",
+      gridArea: { colStart: 1, colSpan: 3, rowStart: 3, rowSpan: 4 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "plan-2-bg",
+      type: "shape",
+      role: "accent-shape",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 1, rowSpan: 6 },
+    },
+    {
+      id: "plan-2-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 1, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-2-price",
+      type: "text",
+      role: "display",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-2-features",
+      type: "text",
+      role: "body",
+      gridArea: { colStart: 5, colSpan: 3, rowStart: 3, rowSpan: 4 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "plan-3-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 1, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-3-price",
+      type: "text",
+      role: "display",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "plan-3-features",
+      type: "text",
+      role: "body",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 3, rowSpan: 4 },
+      alignment: "center",
+      padding: 4,
+    },
+  ],
+};
+
+/**
+ * Roadmap with 4 horizontal phase blocks.
+ * Each phase has a phase number, name, and description.
+ */
+const roadmap: LayoutDefinition = {
+  name: "roadmap",
+  description: "4-phase horizontal roadmap with phase numbers, names, and descriptions",
+  category: "data",
+  elements: [
+    {
+      id: "heading",
+      type: "text",
+      role: "heading",
+      gridArea: { colStart: 1, colSpan: 10, rowStart: 0, rowSpan: 1 },
+      alignment: "left",
+    },
+    {
+      id: "phase-1-num",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 0, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-1-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 0, colSpan: 3, rowStart: 3, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-1-desc",
+      type: "text",
+      role: "bodySmall",
+      gridArea: { colStart: 0, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "phase-2-num",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 3, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-2-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 3, colSpan: 3, rowStart: 3, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-2-desc",
+      type: "text",
+      role: "bodySmall",
+      gridArea: { colStart: 3, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "phase-3-num",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 6, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-3-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 6, colSpan: 3, rowStart: 3, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-3-desc",
+      type: "text",
+      role: "bodySmall",
+      gridArea: { colStart: 6, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+    {
+      id: "phase-4-num",
+      type: "text",
+      role: "overline",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 2, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-4-name",
+      type: "text",
+      role: "subheading",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 3, rowSpan: 1 },
+      alignment: "center",
+    },
+    {
+      id: "phase-4-desc",
+      type: "text",
+      role: "bodySmall",
+      gridArea: { colStart: 9, colSpan: 3, rowStart: 4, rowSpan: 2 },
+      alignment: "center",
+      padding: 4,
+    },
+  ],
+};
+
+// ============================================================================
 // Exported library
 // ============================================================================
 
@@ -742,4 +1179,11 @@ export const layoutLibrary: Record<string, LayoutDefinition> = {
   "closing-cta": closingCta,
   "closing-thankyou": closingThankyou,
   "blank-canvas": blankCanvas,
+
+  // Business Layouts
+  "timeline": timeline,
+  "before-after": beforeAfter,
+  "team-grid": teamGrid,
+  "pricing-table": pricingTable,
+  "roadmap": roadmap,
 };

@@ -17,7 +17,7 @@ import type { TypeRole, TypeStyle } from "./typography.js";
 import type { ColorPalette } from "./color.js";
 import type { DesignTokens } from "./tokens.js";
 import type { LayoutDefinition, ResolvedElement, ElementRole } from "./layouts.js";
-import type { BrandConfig } from "./brand.js";
+import type { BrandConfig, BrandStyle } from "./brand.js";
 import type { ResolvedElement as BalanceResolvedElement } from "./balance.js";
 import type { AccentElement } from "./accents.js";
 import type { SlideContent } from "./variations.js";
@@ -31,6 +31,7 @@ import { resolveBrand, brandToTokens } from "./brand.js";
 import { balanceComposition } from "./balance.js";
 import { generateAccents } from "./accents.js";
 import { generateVariation, selectLayout } from "./variations.js";
+import { generateProgressIndicator } from "./progress.js";
 import {
   runAppleScript,
   keynoteScript,
@@ -564,22 +565,81 @@ export async function composeSlide(
 // Deck composition
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Transition helpers
+// ---------------------------------------------------------------------------
+
+/** Map brand style to a Keynote transition effect and duration. */
+function getTransitionForStyle(
+  brandStyle: BrandStyle,
+  isSection: boolean,
+): { effect: string; duration: number } {
+  if (isSection) {
+    return { effect: "fade through color", duration: 0.8 };
+  }
+  switch (brandStyle) {
+    case "minimal":
+      return { effect: "dissolve", duration: 0.5 };
+    case "bold":
+      return { effect: "push", duration: 0.8 };
+    case "elegant":
+      return { effect: "dissolve", duration: 1.0 };
+    case "playful":
+      return { effect: "magic move", duration: 0.7 };
+    case "corporate":
+      return { effect: "dissolve", duration: 0.6 };
+  }
+}
+
+/**
+ * Apply a transition to a Keynote slide via AppleScript.
+ */
+async function applyTransition(
+  slideIndex: number,
+  effect: string,
+  duration: number,
+): Promise<void> {
+  const script = keynoteScript(
+    `set transition properties of slide ${slideIndex} of document 1 to {transition effect:${effect}, transition duration:${duration}}`
+  );
+  await runAppleScript(script);
+}
+
+// ---------------------------------------------------------------------------
+// Deck composition
+// ---------------------------------------------------------------------------
+
 /**
  * Compose an entire deck by iterating over multiple slide inputs.
  *
  * Tracks previously used layout names and passes them to selectLayout
- * for variety across slides.
+ * for variety across slides. Optionally applies transitions and progress
+ * indicators for a cohesive multi-slide experience.
  *
  * @param inputs - Array of composition inputs, one per slide.
+ * @param options - Optional deck-level settings.
  * @returns Array of results, one per slide.
  */
 export async function composeDeck(
   inputs: SlideComposerInput[],
+  options?: {
+    autoTransitions?: boolean;
+    showProgress?: boolean;
+  },
 ): Promise<SlideComposerResult[]> {
   const results: SlideComposerResult[] = [];
   const usedLayouts: string[] = [];
+  const autoTransitions = options?.autoTransitions !== false;
+  const showProgress = options?.showProgress ?? false;
 
-  for (const input of inputs) {
+  // Resolve the brand once for deck-level features
+  const deckBrand = await resolveBrand(inputs[0]?.brand);
+  const { palette } = brandToTokens(deckBrand);
+  const brandStyle: BrandStyle = deckBrand.style ?? "corporate";
+
+  for (let i = 0; i < inputs.length; i++) {
+    const input = inputs[i];
+
     // If no explicit layout, use selectLayout with previously used layouts
     let effectiveInput = input;
     if (!input.layoutName) {
@@ -590,6 +650,31 @@ export async function composeDeck(
     const result = await composeSlide(effectiveInput);
     results.push(result);
     usedLayouts.push(result.layoutName);
+
+    // Apply progress indicators
+    if (showProgress && inputs.length > 1) {
+      try {
+        const progressElements = generateProgressIndicator(
+          i, inputs.length, brandStyle, palette,
+        );
+        for (const accent of progressElements) {
+          await renderAccentElement(input.slideIndex, accent);
+        }
+      } catch {
+        // Progress indicators are non-critical
+      }
+    }
+
+    // Apply transitions between slides
+    if (autoTransitions && i > 0) {
+      try {
+        const isSection = result.layoutName.includes("section") || result.layoutName.includes("title");
+        const { effect, duration } = getTransitionForStyle(brandStyle, isSection);
+        await applyTransition(input.slideIndex, effect, duration);
+      } catch {
+        // Transitions are non-critical
+      }
+    }
   }
 
   return results;

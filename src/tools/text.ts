@@ -9,6 +9,10 @@ import {
 import { defaultTokens } from "../design/tokens.js";
 import { getTypeStyle } from "../design/typography.js";
 import { Grid } from "../design/grid.js";
+import { resolveCurrentBrand } from "../design/brand-state.js";
+import { brandToTokens } from "../design/brand.js";
+import { ensureContrast } from "../design/color.js";
+import type { TypeRole } from "../design/typography.js";
 
 /**
  * Converts a hex color string (e.g. "#FF0000") to Keynote's RGB format
@@ -177,17 +181,30 @@ export function registerTextTools(server: McpServer): void {
 
         let needsBold = false;
 
-        // Role-based typography: apply font, size, color from the design system
+        // Role-based typography: apply font, size, color from the brand-aware design system
         if (role) {
-          const typeStyle = getTypeStyle(role);
+          let typeStyle;
+          let textColor: string | undefined;
+          try {
+            const brand = await resolveCurrentBrand();
+            const { palette, typography } = brandToTokens(brand);
+            typeStyle = typography[role as TypeRole];
+            // Ensure text color has sufficient contrast against brand background
+            textColor = typeStyle.color ?? palette.textPrimary;
+            textColor = ensureContrast(textColor, palette.background, 4.5);
+          } catch {
+            // Fall back to default type scale if brand resolution fails
+            typeStyle = getTypeStyle(role);
+            textColor = typeStyle.color;
+          }
           const escapedFont = escapeAppleScriptString(typeStyle.fontName);
           commands.push(`  set font of object text of newItem to "${escapedFont}"`);
           commands.push(`  set size of object text of newItem to ${typeStyle.fontSize}`);
           if (typeStyle.fontWeight === "bold") {
             needsBold = true;
           }
-          if (typeStyle.color) {
-            const rgb = hexToKeynoteRGB(typeStyle.color);
+          if (textColor) {
+            const rgb = hexToKeynoteRGB(textColor);
             commands.push(`  set color of object text of newItem to {${rgb.r}, ${rgb.g}, ${rgb.b}}`);
           }
         }

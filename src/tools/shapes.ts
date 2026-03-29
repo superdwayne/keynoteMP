@@ -4,7 +4,8 @@ import {
   runAppleScript,
   keynoteScript,
 } from "../applescript.js";
-import { resolveBrand, brandToTokens } from "../design/brand.js";
+import { brandToTokens } from "../design/brand.js";
+import { resolveCurrentBrand } from "../design/brand-state.js";
 
 /**
  * Convert a hex colour string (e.g. "#FF0000") to a Keynote-compatible
@@ -50,7 +51,7 @@ export function registerShapeTools(server: McpServer): void {
         .optional()
         .describe('Fill colour as hex, e.g. "#FF0000"'),
       role: z
-        .enum(["accent-shape", "divider", "background-shape"])
+        .enum(["accent-shape", "divider", "background-shape", "highlight", "background-panel"])
         .optional()
         .describe("Semantic shape role. When provided, applies smart defaults for color and sizing from the brand system"),
     },
@@ -62,16 +63,14 @@ export function registerShapeTools(server: McpServer): void {
 
       if (role) {
         try {
-          const brand = await resolveBrand();
+          const brand = await resolveCurrentBrand();
           const { palette } = brandToTokens(brand);
 
           if (role === "accent-shape") {
             if (!fillColor) {
               effectiveFillColor = brand.accentColor ?? palette.accent;
             }
-            // Accent shapes are smaller by default -- keep user-provided size if given
           } else if (role === "divider") {
-            // Thin line: height=2 for horizontal, width=2 for vertical
             if (shapeType === "line" || effectiveHeight <= effectiveWidth) {
               effectiveHeight = 2;
             } else {
@@ -84,10 +83,20 @@ export function registerShapeTools(server: McpServer): void {
             if (!fillColor) {
               effectiveFillColor = brand.backgroundColor ?? palette.background;
             }
-            // Full slide dimensions if no explicit size was provided
-            // Use standard 1024x768 as full slide defaults
             effectiveWidth = 1024;
             effectiveHeight = 768;
+          } else if (role === "highlight") {
+            if (!fillColor) {
+              effectiveFillColor = brand.accentColor ?? palette.accent;
+            }
+          } else if (role === "background-panel") {
+            if (!fillColor) {
+              effectiveFillColor = palette.surface;
+            }
+            if (width === effectiveWidth && height === effectiveHeight) {
+              effectiveWidth = 512;
+              effectiveHeight = 400;
+            }
           }
         } catch {
           // If brand resolution fails, continue without role-based defaults

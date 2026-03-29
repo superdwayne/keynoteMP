@@ -12,7 +12,7 @@ A Model Context Protocol (MCP) server that provides full programmatic control ov
 ## Installation
 
 ```bash
-git clone <repository-url> keynote-mcp-server
+git clone https://github.com/superdwayne/keynoteMP.git keynote-mcp-server
 cd keynote-mcp-server
 npm install
 npm run build
@@ -43,7 +43,28 @@ Replace `/absolute/path/to/keynote-mcp-server` with the actual path on your mach
 
 ## Tool Reference
 
-The server registers **62 tools** across 12 modules. All slide indices are **1-based**.
+The server registers **70 tools** across 13 modules. All slide indices are **1-based**.
+
+### Design Engine (8 tools)
+
+The Design Engine automates professional slide composition with a brand-aware system including 23+ layouts, typography scaling, color harmonies, and presentation templates.
+
+| Tool | Parameters | Description |
+|------|-----------|-------------|
+| `design_slide` | `slideIndex`, `title?`, `subtitle?`, `body?`, `bodyItems?`, `quote?`, `imagePaths?`, `stats?`, `layoutName?`, `primaryColor?`, `style?`, `variationSeed?`, `addAccents?` | Composes a complete slide with automatic layout, typography, and color |
+| `design_deck` | `slides[]`, `primaryColor?`, `style?`, `addAccents?` | Composes multiple slides with consistent branding and layout variety |
+| `set_brand` | `primaryColor?`, `secondaryColor?`, `accentColor?`, `backgroundColor?`, `fontPrimary?`, `fontSecondary?`, `style?` | Sets brand configuration for subsequent design operations |
+| `get_brand` | -- | Extracts brand configuration from the active Keynote theme |
+| `list_layouts` | `category?` | Lists all available slide layouts with descriptions and element details |
+| `list_templates` | -- | Lists all presentation templates with slide counts |
+| `get_template` | `templateName` | Gets full structure of a template with content hints |
+| `design_from_template` | `templateName`, `slides?`, `primaryColor?`, `style?`, `startSlideIndex?` | Creates a full presentation from a template |
+
+**Available layouts:** `title-center`, `title-left`, `title-bold`, `section-break`, `section-gradient`, `content-left`, `content-right-image`, `content-left-image`, `two-column`, `three-column`, `full-image`, `image-grid`, `quote`, `statistic`, `comparison`, `closing-cta`, `closing-thankyou`, `blank-canvas`, `timeline`, `before-after`, `team-grid`, `pricing-table`, `roadmap`
+
+**Available templates:** `pitch-deck` (10 slides), `status-update` (5 slides), `workshop` (8 slides), `product-launch` (7 slides)
+
+**Brand styles:** `minimal`, `bold`, `elegant`, `playful`, `corporate`
 
 ### Presentation Management (6 tools)
 
@@ -74,7 +95,7 @@ The server registers **62 tools** across 12 modules. All slide indices are **1-b
 |------|-----------|-------------|
 | `set_slide_title` | `slideIndex` (int), `text` (string) | Sets the title text of a slide |
 | `set_slide_body` | `slideIndex` (int), `text` (string) | Sets the body text of a slide |
-| `add_text_item` | `slideIndex` (int), `text` (string), `x`, `y`, `width`, `height` (numbers) | Adds a new text box at a given position and size |
+| `add_text_item` | `slideIndex` (int), `text` (string), `x`, `y`, `width`, `height` (numbers), `role?` (display/heading/subheading/body/caption/quote/overline/bodySmall), `autoPosition?` (boolean) | Adds a text box with optional brand-aware typography via `role` |
 | `update_text_item` | `slideIndex` (int), `itemIndex` (int), `text` (string) | Updates text content of an existing text item |
 | `delete_text_item` | `slideIndex` (int), `itemIndex` (int) | Removes a text item from a slide |
 | `list_text_items` | `slideIndex` (int) | Lists all text items on a slide with content, position, and size |
@@ -84,7 +105,7 @@ The server registers **62 tools** across 12 modules. All slide indices are **1-b
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `add_image` | `slideIndex` (int), `filePath` (string), `x?`, `y?`, `width?`, `height?` (numbers) | Adds an image file to a slide |
+| `add_image` | `slideIndex` (int), `filePath` (string), `x?`, `y?`, `width?`, `height?` (numbers), `role?` (hero-image/thumbnail/background-image/icon/inline/avatar) | Adds an image with optional role-based sizing |
 | `replace_image` | `slideIndex` (int), `imageIndex` (int), `filePath` (string) | Replaces an existing image with a new file |
 | `delete_image` | `slideIndex` (int), `imageIndex` (int) | Removes an image from a slide |
 | `list_images` | `slideIndex` (int) | Lists all images on a slide with positions and file names |
@@ -162,12 +183,28 @@ The server registers **62 tools** across 12 modules. All slide indices are **1-b
 
 | Tool | Parameters | Description |
 |------|-----------|-------------|
-| `add_shape` | `slideIndex` (int), `shapeType` (rectangle/circle/triangle/arrow_right/arrow_left/star/diamond/line), `x`, `y`, `width`, `height` (numbers), `fillColor?` (hex) | Adds a shape to a slide |
+| `add_shape` | `slideIndex` (int), `shapeType` (rectangle/circle/triangle/arrow_right/arrow_left/star/diamond/line), `x`, `y`, `width`, `height` (numbers), `fillColor?` (hex), `role?` (accent-shape/divider/background-shape/highlight/background-panel) | Adds a shape with optional brand-aware color via `role` |
 | `delete_shape` | `slideIndex` (int), `shapeIndex` (int) | Removes a shape from a slide |
 | `list_shapes` | `slideIndex` (int) | Lists all shapes on a slide with position and size |
 | `update_shape` | `slideIndex` (int), `shapeIndex` (int), `x?`, `y?`, `width?`, `height?`, `fillColor?`, `borderColor?`, `borderWidth?` | Modifies a shape's position, size, or styling |
 
 ## Usage Examples
+
+### Design a pitch deck from a template
+
+```
+"Create a pitch deck for my startup using the pitch-deck template with our brand colors #2563EB and an elegant style."
+```
+
+Claude will call `set_brand`, then `design_from_template` with "pitch-deck", generating all 10 slides with coordinated layouts, typography, and transitions.
+
+### Design a single slide with brand-aware styling
+
+```
+"Design slide 3 with the title 'Market Opportunity', body text about the TAM, and use the statistic layout."
+```
+
+Claude will call `design_slide` with the content and layout name, automatically applying brand colors and typography.
 
 ### Create a presentation from scratch
 
@@ -175,7 +212,7 @@ The server registers **62 tools** across 12 modules. All slide indices are **1-b
 "Create a new Keynote presentation with the Gradient theme, add 5 slides, and set titles for each one."
 ```
 
-Claude will call `create_presentation` with `themeName: "Gradient"`, then `add_slide` five times, and `set_slide_title` for each slide.
+Claude will call `create_presentation`, then `add_slide` five times, and `set_slide_title` for each slide.
 
 ### Build a data-driven slide
 
@@ -193,21 +230,13 @@ Claude will use `add_table`, then `set_table_data` to populate the cells.
 
 Claude will call `export_to_pdf` and `export_to_images` with the appropriate paths.
 
-### Control a live presentation
+### Add brand-aware text and shapes
 
 ```
-"Start the slideshow from slide 1, then advance two slides."
+"Add a heading with role 'display' on slide 1 that says 'Welcome'."
 ```
 
-Claude will call `start_slideshow`, then `next_slide` twice.
-
-### Extract content for review
-
-```
-"Read the full content of my open presentation so we can discuss improvements."
-```
-
-Claude will call `get_full_presentation_content` to retrieve a structured summary of every slide.
+Claude will call `add_text_item` with `role: "display"`, which automatically applies brand-aware font, size, and color with WCAG-compliant contrast.
 
 ## Architecture
 
@@ -219,8 +248,8 @@ keynote-mcp-server/
     tools/
       presentation.ts     # create, open, save, close, list, info
       slides.ts           # add, delete, duplicate, move, count, list, layouts
-      text.ts             # title, body, text items, formatting
-      images.ts           # add, replace, delete, list, reposition images
+      text.ts             # title, body, text items, formatting (brand-aware via role)
+      images.ts           # add, replace, delete, list, reposition (role-based sizing)
       notes.ts            # set, get, get-all presenter notes
       theme.ts            # themes, backgrounds, master slides
       transitions.ts      # slide transitions, build animations
@@ -228,7 +257,24 @@ keynote-mcp-server/
       slideshow.ts        # start, stop, next, previous, go-to, status
       export.ts           # PDF, images, PowerPoint, single-slide export
       content.ts          # read slide content, full presentation summary
-      shapes.ts           # add, delete, list, update shapes
+      shapes.ts           # add, delete, list, update shapes (brand-aware via role)
+      design.ts           # design_slide, design_deck, set_brand, get_brand, list_layouts,
+                          #   list_templates, get_template, design_from_template
+    design/
+      tokens.ts           # Design tokens (spacing, margins, canvas sizes)
+      color.ts            # Color math, harmonies, WCAG contrast
+      typography.ts       # Type scale system (8 roles, modular scale)
+      grid.ts             # 12-column, 8-row grid system
+      layouts.ts          # Layout definition schema
+      layout-library.ts   # 23+ pre-built slide layouts
+      brand.ts            # Brand configuration, theme extraction
+      brand-state.ts      # Shared brand state across all tool modules
+      balance.ts          # Visual balance and whitespace utilities
+      accents.ts          # Decorative accent generation
+      variations.ts       # Layout variation engine (mirror, shift, toggle)
+      composer.ts         # Slide/deck composition orchestration
+      templates.ts        # Presentation templates (pitch-deck, status-update, etc.)
+      progress.ts         # Progress indicators for multi-slide decks
   dist/                   # Compiled JavaScript output (generated by `npm run build`)
   package.json
   tsconfig.json

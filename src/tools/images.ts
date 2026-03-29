@@ -29,7 +29,7 @@ export function registerImageTools(server: McpServer): void {
         .optional()
         .describe("Height in points (omit to use intrinsic height)"),
       role: z
-        .enum(["hero-image", "thumbnail", "background-image", "icon"])
+        .enum(["hero-image", "thumbnail", "background-image", "icon", "inline", "avatar"])
         .optional()
         .describe("Semantic image role. When provided, applies smart sizing and positioning defaults from the grid system"),
     },
@@ -60,6 +60,16 @@ export function registerImageTools(server: McpServer): void {
           } else if (role === "icon") {
             if (width === undefined) finalWidth = 64;
             if (height === undefined) finalHeight = 64;
+          } else if (role === "inline") {
+            const grid = Grid.createGrid(defaultTokens);
+            const rect = grid.getCell(1, 8, 3, 3);
+            if (x === 0) finalX = rect.x;
+            if (y === 0) finalY = rect.y;
+            if (width === undefined) finalWidth = rect.width;
+            if (height === undefined) finalHeight = rect.height;
+          } else if (role === "avatar") {
+            if (width === undefined) finalWidth = 80;
+            if (height === undefined) finalHeight = 80;
           }
         }
 

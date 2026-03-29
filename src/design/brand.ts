@@ -210,8 +210,11 @@ export async function extractThemeColors(_slideIndex?: number): Promise<BrandCon
 
     // Unknown theme -- return defaults with corporate style
     return { ...DEFAULT_BRAND };
-  } catch {
-    // Keynote not running, no document open, or JXA failed
+  } catch (error) {
+    console.error(
+      "Theme extraction failed:",
+      error instanceof Error ? error.message : String(error)
+    );
     return { ...DEFAULT_BRAND };
   }
 }
